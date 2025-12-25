@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TEHA_TECH Scientific Calculator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Pixel LCD font -->
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg-dark: #020617;
+  --calc-dark: #0b1220;
+  --display-dark: #020617;
+  --text-dark: #7dd3fc;
+  --bg-light: #f0f0f0;
+  --calc-light: #ffffff;
+  --display-light: #e0e0e0;
+  --text-light: #000000;
+}
+
+body {
+  background: radial-gradient(var(--bg-dark), #000);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  transition: background 0.3s;
+}
+
+.calc {
+  width: 370px;
+  max-width: 95vw;
+  background: var(--calc-dark);
+  border-radius: 22px;
+  padding: 18px;
+  box-shadow: 0 30px 60px rgba(0,0,0,.8);
+  transition: background 0.3s;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  color: #9ca3af;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.brand {
+  font-weight: bold;
+  color: #38bdf8;
+}
+
+.display {
+  width: 100%;
+  height: 64px;
+  background: var(--display-dark);
+  color: var(--text-dark);
+  font-size: 26px;
+  text-align: right;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  font-family: 'Share Tech Mono', monospace;
+  margin-bottom: 14px;
+  transition: background 0.3s, color 0.3s;
+}
+
+.keys {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+button {
+  height: 48px;
+  border-radius: 10px;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  color: white;
+  transition: background 0.3s;
+}
+
+.gray { background: #1f2933; }
+.blue { background: #2563eb; }
+.purple { background: #7c3aed; }
+.green { background: #16a34a; }
+.red { background: #dc2626; }
+
+button:active { transform: scale(.95); }
+
+.history-container {
+  margin-top: 10px;
+  max-height: 150px;
+  overflow-y: auto;
+  background: rgba(0,0,0,0.2);
+  border-radius: 10px;
+  padding: 6px;
+  font-family: monospace;
+  font-size: 14px;
+  color: #fff;
+}
+</style>
+</head>
+
+<body>
+
+<div class="calc">
+  <div class="header">
+    <span class="brand">TEHA_TECH</span>
+    <div>
+      <span id="mode">DEG</span> |
+      <button onclick="toggleTheme()" style="font-size:12px;">MODE</button>
+    </div>
+  </div>
+
+  <input id="display" class="display" readonly>
+
+  <div class="keys">
+    <button class="purple" onclick="toggle2nd()">2nd</button>
+    <button class="purple" onclick="toggleDRG()">DRG</button>
+    <button class="purple" onclick="del()">DEL</button>
+    <button class="gray" onclick="store()">STO</button>
+    <button class="gray" onclick="recall()">RCL</button>
+
+    <button class="purple" onclick="sci('log')">LOG</button>
+    <button class="purple" onclick="sci('ln')">LN</button>
+    <button class="purple" onclick="sciTrig('sin')">SIN</button>
+    <button class="purple" onclick="sciTrig('cos')">COS</button>
+    <button class="purple" onclick="sciTrig('tan')">TAN</button>
+
+    <button class="purple" onclick="press('π')">π</button>
+    <button class="purple" onclick="press('Math.sqrt(')">√</button>
+    <button class="purple" onclick="press('^2')">x²</button>
+    <button class="gray" onclick="press('(')">(</button>
+    <button class="gray" onclick="press(')')">)</button>
+
+    <button class="gray" onclick="press('7')">7</button>
+    <button class="gray" onclick="press('8')">8</button>
+    <button class="gray" onclick="press('9')">9</button>
+    <button class="blue" onclick="press('/')">÷</button>
+    <button class="blue" onclick="press('*')">×</button>
+
+    <button class="gray" onclick="press('4')">4</button>
+    <button class="gray" onclick="press('5')">5</button>
+    <button class="gray" onclick="press('6')">6</button>
+    <button class="blue" onclick="press('-')">−</button>
+    <button class="blue" onclick="press('+')">+</button>
+
+    <button class="gray" onclick="press('1')">1</button>
+    <button class="gray" onclick="press('2')">2</button>
+    <button class="gray" onclick="press('3')">3</button>
+    <button class="green" onclick="calculate()">ENTER</button>
+    <button class="red" onclick="clearAll()">CLEAR</button>
+
+    <button class="gray" onclick="press('0')">0</button>
+    <button class="gray" onclick="press('.')">.</button>
+    <button class="gray" onclick="press('e')">EE</button>
+  </div>
+
+  <div class="history-container" id="history"></div>
+</div>
+
+<script>
+const display = document.getElementById("display");
+const historyEl = document.getElementById("history");
+
+let mode = "DEG";
+let second = false;
+let ans = 0;
+let memory = 0;
+let history = [];
+let theme = "dark";
+
+// --- Calculator Functions ---
+function press(v) { display.value += v; }
+function clearAll() { display.value = ""; }
+function del() { display.value = display.value.slice(0, -1); }
+
+function toggleDRG() {
+  mode = mode === "DEG" ? "RAD" : "DEG";
+  document.getElementById("mode").textContent = mode;
+}
+
+function toggle2nd() { second = !second; }
+
+function sci(fn) { display.value += fn + "("; }
+
+function sciTrig(fn) {
+  if (!second) display.value += fn + "(";
+  else display.value += fn + "Inv(";
+}
+
+function store() { memory = ans; }
+function recall() { display.value += memory; }
+
+function calculate() {
+  try {
+    let expr = display.value
+      .replace(/π/g, "Math.PI")
+      .replace(/\^2/g, "**2")
+      .replace(/e/g, "*10**")
+      .replace(/sinInv/g, "Math.asin")
+      .replace(/cosInv/g, "Math.acos")
+      .replace(/tanInv/g, "Math.atan")
+      .replace(/sin/g, mode === "DEG" ? "Math.sin(Math.PI/180*" : "Math.sin(")
+      .replace(/cos/g, mode === "DEG" ? "Math.cos(Math.PI/180*" : "Math.cos(")
+      .replace(/tan/g, mode === "DEG" ? "Math.tan(Math.PI/180*" : "Math.tan(")
+      .replace(/log/g, "Math.log10")
+      .replace(/ln/g, "Math.log");
+
+    ans = Function("return " + expr)();
+    display.value = ans;
+
+    // Add to history
+    history.push(expr + " = " + ans);
+    updateHistory();
+
+    second = false;
+  } catch {
+    display.value = "ERROR";
+  }
+}
+
+function updateHistory() {
+  historyEl.innerHTML = history.slice(-10).reverse().map(h => `<div>${h}</div>`).join('');
+}
+
+// --- Theme Toggle ---
+function toggleTheme() {
+  if(theme === "dark") {
+    document.body.style.background = "radial-gradient(var(--bg-light), #ccc)";
+    document.querySelector(".calc").style.background = "var(--calc-light)";
+    display.style.background = "var(--display-light)";
+    display.style.color = "var(--text-light)";
+    theme = "light";
+  } else {
+    document.body.style.background = "radial-gradient(var(--bg-dark), #000)";
+    document.querySelector(".calc").style.background = "var(--calc-dark)";
+    display.style.background = "var(--display-dark)";
+    display.style.color = "var(--text-dark)";
+    theme = "dark";
+  }
+}
+
+// --- Keyboard Support ---
+document.addEventListener("keydown", (e) => {
+  const key = e.key;
+  if(/[0-9]/.test(key)) press(key);
+  else if(key === ".") press(".");
+  else if(key === "+") press("+");
+  else if(key === "-") press("-");
+  else if(key === "*") press("*");
+  else if(key === "/") press("/");
+  else if(key === "Enter") calculate();
+  else if(key === "Backspace") del();
+  else if(key === "Escape") clearAll();
+});
+</script>
+
+</body>
+</html>
+ 
